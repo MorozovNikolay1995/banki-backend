@@ -2,12 +2,14 @@ package routes
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/joho/sqltocsv"
 	_ "github.com/lib/pq"
 )
 
@@ -15,7 +17,9 @@ var dbinfo string
 
 func init() {
 	err := GetDBInfo()
-	checkErr(err)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func GetDBInfo() error {
@@ -36,7 +40,9 @@ func GetDBInfo() error {
 func setupDB() *sql.DB {
 	db, err := sql.Open("postgres", dbinfo)
 
-	checkErr(err)
+	if err != nil {
+		panic(err)
+	}
 
 	return db
 }
@@ -73,17 +79,16 @@ type JsonResponseBankStatus struct {
 	Time   string     `json:"time"`
 }
 
-func checkErr(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-func SampleHandler(c *gin.Context) {
+func SampleHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("sample")
 	db := setupDB()
 
 	rows, err := db.Query("select id, link, title, city , bank_name, score, status, username, create_dt, comments from home.dt_banki_responses order by id desc limit 10")
-	checkErr(err)
+	defer rows.Close()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	var sUnits []SampleUnit
 
@@ -92,17 +97,35 @@ func SampleHandler(c *gin.Context) {
 
 		err := rows.Scan(&unit.Id, &unit.Link, &unit.Title, &unit.City, &unit.BankName, &unit.Score, &unit.Status, &unit.Username, &unit.CreateDT, &unit.Comments)
 
-		checkErr(err)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		sUnits = append(sUnits, unit)
 	}
 
 	var response = JsonResponseSampleUnits{Status: "success", Data: sUnits, Time: time.Now().String()}
 
-	c.JSON(200, response)
+	json.NewEncoder(w).Encode(response)
 }
 
-func ExportHandler(c *gin.Context) {
-	// "select *from home.dt_banki_responses where create_dt <= date(now())-2 order by id desc limit 100"
+func ExportHandler(w http.ResponseWriter, r *http.Request) {
+	db := setupDB()
+
+	rows, err := db.Query("select *from home.dt_banki_responses where create_dt <= date(now())-2 order by id desc limit 100")
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	w.Header().Set("Content-type", "text/csv")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"report.csv\"")
+
+	sqltocsv.Write(w, rows)
+
+	//
 	// response["Content-Disposition"] = f"attachment; filename=export_{sysdate()}.csv"
 	// def get_example_csv(request):
 	//     response = HttpResponse(content_type="text/csv; charset=windows-1251")
@@ -128,11 +151,15 @@ func ExportHandler(c *gin.Context) {
 	//     return response
 }
 
-func StatsHandler(c *gin.Context) {
+func StatsHandler(w http.ResponseWriter, r *http.Request) {
 	db := setupDB()
 
 	rows, err := db.Query("select * from home.v_stats")
-	checkErr(err)
+	defer rows.Close()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	var bankInfos []BankInfo
 
@@ -141,11 +168,14 @@ func StatsHandler(c *gin.Context) {
 
 		err := rows.Scan(&unit.BankName, &unit.Scorex, &unit.Median, &unit.Cnt)
 
-		checkErr(err)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		bankInfos = append(bankInfos, unit)
 	}
 
 	var response = JsonResponseBankStatus{Status: "success", Data: bankInfos, Time: time.Now().String()}
 
-	c.JSON(200, response)
+	json.NewEncoder(w).Encode(response)
 }
