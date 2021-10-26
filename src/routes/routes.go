@@ -23,16 +23,24 @@ func init() {
 }
 
 func GetDBInfo() error {
-	db_host := os.Getenv("DB_HOST")
-	db_name := os.Getenv("DB_NAME")
-	db_password := os.Getenv("DB_PASSWORD")
-	db_port := os.Getenv("DB_PORT")
-	db_user := os.Getenv("DB_USER")
+	env := make(map[string]string)
+	env["DB_HOST"] = os.Getenv("DB_HOST")
+	env["DB_NAME"] = os.Getenv("DB_NAME")
+	env["DB_PASSWORD"] = os.Getenv("DB_PASSWORD")
+	env["DB_PORT"] = os.Getenv("DB_PORT")
+	env["DB_USER"] = os.Getenv("DB_USER")
 
-	if db_host == "" || db_name == "" || db_password == "" || db_port == "" || db_user == "" {
-		return errors.New("One or more environment variables is not set: DB_USER, DB_PASSWORD, DB_NAME, DB_HOST, DB_PORT")
+	var unsetted string
+	for i, _ := range env {
+		if env[i] == "" {
+			unsetted = unsetted + i + " "
+		}
 	}
-	dbinfo = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", db_host, db_port, db_user, db_password, db_name)
+
+	if unsetted != "" {
+		return errors.New("Environment variables is not set: " + unsetted)
+	}
+	dbinfo = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", env["DB_HOST"], env["DB_PORT"], env["DB_USER"], env["DB_PASSWORD"], env["DB_NAME"])
 
 	return nil
 }
@@ -79,6 +87,10 @@ type JsonResponseBankStatus struct {
 	Time   string     `json:"time"`
 }
 
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+}
+
 func SampleHandler(w http.ResponseWriter, r *http.Request) {
 	db := setupDB()
 
@@ -101,7 +113,8 @@ func SampleHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		sUnits = append(sUnits, unit)
 	}
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	enableCors(&w)
 
 	var response = JsonResponseSampleUnits{Status: "success", Data: sUnits, Time: time.Now().String()}
 	json.NewEncoder(w).Encode(response)
@@ -117,7 +130,7 @@ func ExportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	enableCors(&w)
 	w.Header().Set("Content-type", "text/csv")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"report.csv\"")
 
@@ -146,7 +159,7 @@ func StatsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		bankInfos = append(bankInfos, unit)
 	}
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	enableCors(&w)
 
 	var response = JsonResponseBankStatus{Status: "success", Data: bankInfos, Time: time.Now().String()}
 	json.NewEncoder(w).Encode(response)
