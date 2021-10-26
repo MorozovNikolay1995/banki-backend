@@ -83,7 +83,6 @@ func SampleHandler(w http.ResponseWriter, r *http.Request) {
 	db := setupDB()
 
 	rows, err := db.Query("select id, link, title, city , bank_name, score, status, username, create_dt, comments from home.dt_banki_responses order by id desc limit 10")
-	defer rows.Close()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -117,7 +116,6 @@ func ExportHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
 
 	w.Header().Set("Content-type", "text/csv")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"report.csv\"")
@@ -129,7 +127,6 @@ func StatsHandler(w http.ResponseWriter, r *http.Request) {
 	db := setupDB()
 
 	rows, err := db.Query("select * from home.v_stats")
-	defer rows.Close()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
