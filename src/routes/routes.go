@@ -80,7 +80,6 @@ type JsonResponseBankStatus struct {
 }
 
 func SampleHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("sample")
 	db := setupDB()
 
 	rows, err := db.Query("select id, link, title, city , bank_name, score, status, username, create_dt, comments from home.dt_banki_responses order by id desc limit 10")
