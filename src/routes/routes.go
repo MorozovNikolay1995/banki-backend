@@ -101,9 +101,9 @@ func SampleHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		sUnits = append(sUnits, unit)
 	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	var response = JsonResponseSampleUnits{Status: "success", Data: sUnits, Time: time.Now().String()}
-
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -117,6 +117,7 @@ func ExportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-type", "text/csv")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"report.csv\"")
 
@@ -145,8 +146,8 @@ func StatsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		bankInfos = append(bankInfos, unit)
 	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	var response = JsonResponseBankStatus{Status: "success", Data: bankInfos, Time: time.Now().String()}
-
 	json.NewEncoder(w).Encode(response)
 }
