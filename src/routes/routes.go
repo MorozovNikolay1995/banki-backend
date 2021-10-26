@@ -124,31 +124,6 @@ func ExportHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename=\"report.csv\"")
 
 	sqltocsv.Write(w, rows)
-
-	//
-	// response["Content-Disposition"] = f"attachment; filename=export_{sysdate()}.csv"
-	// def get_example_csv(request):
-	//     response = HttpResponse(content_type="text/csv; charset=windows-1251")
-	//     cursor = get_cursor()
-	//     query = """
-	//         select *
-	//         from home.dt_banki_responses
-	//         where create_dt <= date(now())-2
-	//         order by id desc
-	//         limit 100
-	//     """
-	//     cursor.execute(query)
-	//     result = cursor.fetchall()
-
-	//     writer = csv.writer(response, delimiter=";")
-	//     writer.writerow([col.name for col in cursor.description])
-	//     for row in result:
-	//         try:
-	//             writer.writerow(list(row.values()))
-	//         except UnicodeEncodeError:
-	//             continue
-	//     response["Content-Disposition"] = f"attachment; filename=export_{sysdate()}.csv"
-	//     return response
 }
 
 func StatsHandler(w http.ResponseWriter, r *http.Request) {
